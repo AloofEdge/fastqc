@@ -1,0 +1,21 @@
+file name: SRR1333832_1.fastq
+Sequence length: 35-151
+Total sequence: 117153568
+
+time:
+real	312m38.964s
+user	310m3.118s
+sys	0m56.659s
+
+fastqc:
+Filename	SRR1333832_1.fastq
+File type	Convential base calls
+Encoding	Sanger / Illumina 1.9
+Total Sequence	117153568
+Filtered Sequence	0
+Sequence	length 35-151
+%GC 	44
+
+time:
+real	44m17s
+user	143m12s
