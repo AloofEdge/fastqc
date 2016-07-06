@@ -5,6 +5,7 @@
 # fig2: per sequence quality scores
 # fig3: per base sequence content
 # fig4: per sequence GC content
+# fig5: sequence length distribution
 
 import numpy as np 
 import matplotlib
@@ -13,26 +14,54 @@ import matplotlib.pyplot as plt
 from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 
 fastq_file="./sample/sample1.fq" #input file
-FILE=open(fastq_file,"r")
-lnum = 0
+#fastq_file="../../data/SRR1333832/SRR1333832_10M.fastq" #input file
+file_ls = fastq_file.split('/')
+file_name = file_ls[len(file_ls)-1]
+print('\033[1;31;40m'+'file name: '+'\033[0m'+file_name)
 
+FILE=open(fastq_file,"r")
+
+shortest = 250
+longest = 0
+lnum = 0
+dic = {}
+for line in FILE:
+    lnum+=1
+    line = line.strip('\n')
+    if lnum % 4 == 2:
+        linelen = len(line)
+        if linelen > longest:
+            longest = linelen
+        if linelen < shortest:
+            shortest = linelen
+        if linelen in dic.keys():
+            dic[linelen]+=1
+        else:
+            dic[linelen]=1
+seq_length = longest
+#print(longest)
+#print(dic)
+
+
+# initialize
+bq_ls = np.zeros((seq_length,92)) # for per base sequence quality
+bq_ls2 = np.zeros((92)) # for per sequence quality scores
+lista = np.zeros((seq_length)) # initialize for per base sequence content
+listt = np.zeros((seq_length))
+listg = np.zeros((seq_length))
+listc = np.zeros((seq_length))
+listn = np.zeros((seq_length))
+gc_ls = np.zeros((seq_length+1)) # initialize for per sequence GC content
+
+print('\033[1;31;40m'+'Sequence length: '+'\033[0m'+ str(shortest)+'-'+str(seq_length))
+FILE.close()
+
+FILE=open(fastq_file,"r")
+
+lnum = 0
 for line in FILE:
     lnum += 1
     line=line.strip('\n')
-
-    # Compute line number
-    if lnum == 2:
-        # initialize
-        seq_length = len(line)
-        bq_ls = np.zeros((seq_length,92)) # for per base sequence quality
-        bq_ls2 = np.zeros((92)) # for per sequence quality scores
-        lista = np.zeros((seq_length)) # initialize for per base sequence content
-        listt = np.zeros((seq_length))
-        listg = np.zeros((seq_length))
-        listc = np.zeros((seq_length))
-        listn = np.zeros((seq_length))
-        gc_ls = np.zeros((150)) # initialize for per sequence GC content
-        print('\033[1;31;40m'+'Sequence length: '+'\033[0m'+ str(len(line)))
 
     if lnum % 4 == 0:
         #print(line)
@@ -52,8 +81,6 @@ for line in FILE:
         line.upper()
         count = 0
         gc = 0
-        if len(line) != seq_length:
-            print(str(lnum)+': '+line)
         ##### per base sequence content
         for char in line:
             if char == 'A':
@@ -74,7 +101,6 @@ for line in FILE:
         gc_ls[gc]+=1
 #print(gc)
 #print(gc_ls)
-
             
 list_sum = lista + listt + listg + listc
 print('\033[1;31;40m'+'Total sequence: '+'\033[0m'+str(lnum/4))
@@ -90,7 +116,7 @@ for i in bq_ls:
     count = 0
     tem_ls = []
     ## get the median value, first quartile, third quartile, maximum, minimum, 10%, 90% value.
-    for k in range(92):
+    for k in range(91):
         count += i[k]
         #if count <=0 and count+(i[k+1])>0:
         #    tem_ls.append(k+3)
@@ -109,10 +135,10 @@ for i in bq_ls:
             tem_ls.append(k+3)
     box_ls.append(tem_ls)
 #print(box_ls)
-############################################################### Figures
-############################################################### box plot: Per base sequence quality
+
+##------------------------------------------------------------- box plot: Per base sequence quality
 labels=[]
-for i in range(150):
+for i in range(seq_length):
     if (i+1) % 5 ==0:
         labels.append(i+1)
     else:
@@ -160,9 +186,9 @@ plt.plot(x, y, color = 'b', linestyle = '-', label = 'Mean Quality')
 #plt.axis([1, seq_length, 0, 50])
 
 plt.legend(loc = 'upper right')
-plt.savefig('1_QualityScoresAcrossAllBases.jpg', format='jpg')
+plt.savefig('./output/1_QualityScoresAcrossAllBases.jpg', format='jpg')
 
-################################################################################ Plot for Per sequence quality scores
+##--------------------------------------------------------------------------------- Plot for Per sequence quality scores
 x2 = np.linspace(1,50, 50)
 y2 = (bq_ls2+2)[:50]
 fig2, ax2 = plt.subplots(figsize=(10,6))
@@ -174,7 +200,7 @@ ax2.set_ylabel('Read Number')
 plt.plot(x2, y2, linestyle = '-', label = 'Average Quality per read')
 plt.legend(loc = 'upper left')
 plt.savefig('./output/2_QualityScoreDistributionOverAllSequences.jpg', format='jpg')
-################################################################################# Plot for per base sequence content
+##------------------------------------------------------------------------------ Plot for per base sequence content
 x3 = np.linspace(1, seq_length, seq_length)
 list_sum = lista + listt + listg + listc
 fig3, ax3 = plt.subplots(figsize=(10,6))
@@ -193,9 +219,10 @@ plt.plot(x3, 100*listt/list_sum, linestyle = '-', label = '%T')
 plt.plot(x3, 100*listg/list_sum, linestyle = '-', label = '%G')
 plt.plot(x3, 100*listc/list_sum, linestyle = '-', label = '%C')
 plt.plot(x3, 100*listn/list_sum, linestyle = '-', label = '%N')
+plt.plot(x3, 100*(listg+listc)/list_sum, linestyle = '-', label = '%GC')
 plt.legend(loc = 'upper right')
 plt.savefig('./output/3_SequenceContentAcrossAllBases.jpg',format='jpg')
-################################################################################ Plot for per sequence GC content
+##------------------------------------------------------------------------ Plot for per sequence GC content
 x4 = [] #np.linspace(1,100, 100)
 y4 = []
 e = 0
@@ -215,4 +242,21 @@ ax4.set_xlim(0,100)
 plt.plot(x4, y4, linestyle = '-', label = 'GC count per read')
 plt.legend(loc = 'upper right')
 plt.savefig('./output/4_GCdistributionOverAllSequences.jpg',format='jpg')
-
+FILE.close()
+##----------------------------------------------------------------------------- Plot for sequence length distibution
+dic_ls = sorted(dic.iteritems(), key = lambda asd:asd[0], reverse = False)
+len_seq = []
+reads_num = []
+for e in dic_ls:
+    len_seq.append(e[0])
+    reads_num.append(e[1])
+fig5, ax5 = plt.subplots(figsize=(10,6))
+ax5.yaxis.grid(True, linestyle='-', which ='major', color='lightgrey', alpha=0.5)
+ax5.set_axisbelow('True')
+ax5. set_title('Distribution of sequence lengths over all sequence')
+ax5.set_xlabel('Sequence Length (bp)')
+#ax5.set_ylabel('Read Number')
+ax5.set_xlim(0,seq_length)
+plt.plot(len_seq, reads_num, linestyle = '-', label = 'Sequence Length')
+plt.legend(loc = 'upper left')
+plt.savefig('./output/5_DistributionofSequenceLengthsOverAllSequence.jpg',format='jpg')
