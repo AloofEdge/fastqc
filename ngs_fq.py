@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 #file name:ngs_qc.py
+# python script for NGS raw data quality control
+# Input: fastq, fq formated file
 # Output:
 # fig1: per base sequence quality of fastq files
 # fig2: per sequence quality scores
@@ -28,7 +30,7 @@ def isFastq(input_file):
     gzext = (".fq.gz", ".fastq.gz")
     for ext in gzext:
         if input_file.endswith(ext):
-            return gzip.open(input_file,'r')
+            return gzip.open(input_file,'rb')
         else: 
             return open(input_file, 'r')
 
@@ -49,12 +51,13 @@ if not os.path.exists(fastq_file):
     print("The path [{}] is not exit!".format(fastq_file))
     sys.exit()
 
-fastq_name = fastq_file.split('/')[-1].split('.')[0]
+fastq_name = fastq_file.split('/')[-1]#.split('.')[0]
 output_dir = output_dir + fastq_name
+#mkdir dir
 if not os.path.exists(output_dir):
     os.mkdir(output_dir)
     os.mkdir(output_dir+"/Images")
-print('\033[1;31;40m'+'file name: '+'\033[0m'+fastq_name)
+print('\033[1;31;40m'+'File name: '+'\033[0m'+fastq_name)
 
 FILE = isFastq(fastq_file)
 
@@ -79,7 +82,6 @@ for line in FILE:
 seq_length = longest
 #print(longest)
 #print(dic)
-
 
 # initialize
 bq_ls = np.zeros((seq_length,92)) # for per base sequence quality
@@ -129,8 +131,10 @@ for line in FILE:
                 listt[count]+=1
             elif char == 'G':
                 listg[count]+=1
+                #gc+=1
             elif char == 'C':
                 listc[count]+=1
+                #gc+=1
             elif char == 'N':
                 listn[count]+=1
             count+=1
@@ -141,6 +145,7 @@ for line in FILE:
             
 list_sum = lista + listt + listg + listc
 print('\033[1;31;40m'+'Total sequence: '+'\033[0m'+str(lnum/4))
+print('\033[1;31;40m'+'OutDir: '+'\033[0m'+output_dir)
 ls = []
 box_ls =[]
 for i in bq_ls:
@@ -160,15 +165,18 @@ for i in bq_ls:
         #if k <91 and count == count+(i[k+1]) and k>30:
         if count <= 0.1*lnum/4 and count+(i[k+1]) >= 0.1*lnum/4:
             tem_ls.append(k+3)
+            tem_ls.append(k+3)
         if count <= 0.25*lnum/4 and count+(i[k+1]) >= 0.25*lnum/4:
             tem_ls.append(k+3)
             tem_ls.append(k+3)
         if count <= 0.5*lnum/4 and count+(i[k+1]) >= 0.5*lnum/4:
             tem_ls.append(k+3)
+            tem_ls.append(k+3)
         if count <= 0.75*lnum/4 and count+(i[k+1]) >= 0.75*lnum/4:
             tem_ls.append(k+3)
             tem_ls.append(k+3)
         if count <= 0.9*lnum/4 and count+(i[k+1]) >= 0.9*lnum/4:
+            tem_ls.append(k+3)
             tem_ls.append(k+3)
     box_ls.append(tem_ls)
 #print(box_ls)
@@ -270,12 +278,14 @@ for i in range(seq_length):
     y4.append(gc_ls[e])
     read_sum+=gc_ls[e]
     e+=1
+#print(str(read_sum)+ str(max(y4)))
+
 fig4, ax4 = plt.subplots(figsize=(10,6))
 ax4.yaxis.grid(True, linestyle='-', which ='major', color='lightgrey', alpha=0.5)
 ax4.set_axisbelow('True')
 ax4. set_title('GC distribution over all sequences')
 ax4.set_xlabel('Mean GC content (%)')
-ax4.set_ylabel('Read Number')
+ax4.set_ylabel('Count')
 ax4.set_xlim(0,100)
 plt.plot(x4, y4, linestyle = '-', label = 'GC count per read')
 plt.legend(loc = 'upper right')
@@ -293,9 +303,11 @@ ax5.yaxis.grid(True, linestyle='-', which ='major', color='lightgrey', alpha=0.5
 ax5.set_axisbelow('True')
 ax5. set_title('Distribution of sequence lengths over all sequence')
 ax5.set_xlabel('Sequence Length (bp)')
-#ax5.set_ylabel('Read Number')
+ax5.set_ylabel('Count')
 ax5.set_xlim(0,seq_length+10)
-plt.plot(len_seq, reads_num, linestyle = '-', label = 'Sequence Length')
+#plt.plot(len_seq, reads_num, linestyle = '-', label = 'Sequence Length')
+barwidth =1 
+plt.bar(len_seq, reads_num, width=barwidth, color = 'y', label = 'Reads number')
 plt.legend(loc = 'upper left')
 plt.savefig(output_dir+'/Images/5_DistributionofSequenceLengthsOverAllSequence.jpg',format='jpg')
 ##------------------------------------------------------------------------------------- html file
