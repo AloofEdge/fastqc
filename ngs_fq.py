@@ -23,7 +23,7 @@ from matplotlib.ticker import MultipleLocator, FormatStrFormatter
 sys_time = time.strftime("%Y-%m-%d", time.localtime(time.time()))
 
 def usage():
-    print('\n\033[1:31;40mCommand\033[0m: python ngs_qc.py -i input_file(Extension: .fq, .fastq, .fq.gz, .fastq.gz) -o output_dir (default ./)\n')  
+    print('\n\033[1:31;40mUsage\033[0m: python ngs_qc.py -i input_file(Extension: .fq, .fastq, .fq.gz, .fastq.gz) -o output_dir (default ./)\n')  
 FILE = '' 
 def isFastq(input_file):
     #fqext = (".fq", ".fastq")
@@ -52,11 +52,12 @@ if not os.path.exists(fastq_file):
     sys.exit()
 
 fastq_name = fastq_file.split('/')[-1]#.split('.')[0]
+fastq_dir = output_dir + fastq_file.split('/')[-1].split('.')[0]
 output_dir = output_dir + fastq_name
 #mkdir dir
-if not os.path.exists(output_dir):
-    os.mkdir(output_dir)
-    os.mkdir(output_dir+"/Images")
+if not os.path.exists(fastq_dir):
+    os.mkdir(fastq_dir)
+    os.mkdir(fastq_dir+"/Images")
 print('\033[1;31;40m'+'File name: '+'\033[0m'+fastq_name)
 
 FILE = isFastq(fastq_file)
@@ -145,7 +146,7 @@ for line in FILE:
             
 list_sum = lista + listt + listg + listc
 print('\033[1;31;40m'+'Total sequence: '+'\033[0m'+str(lnum/4))
-print('\033[1;31;40m'+'OutDir: '+'\033[0m'+output_dir)
+print('\033[1;31;40m'+'OutDir: '+'\033[0m'+fastq_dir)
 ls = []
 box_ls =[]
 for i in bq_ls:
@@ -158,7 +159,12 @@ for i in bq_ls:
     count = 0
     tem_ls = []
     ## get the median value, first quartile, third quartile, maximum, minimum, 10%, 90% value.
+    # get data for boxplot
     for k in range(91):
+        for l in range(int(i[k])):
+            tem_ls.append(k+3)
+        '''
+        # get parameters of box_plot by self
         count += i[k]
         #if count <=0 and count+(i[k+1])>0:
         #    tem_ls.append(k+3)
@@ -178,6 +184,7 @@ for i in bq_ls:
         if count <= 0.9*lnum/4 and count+(i[k+1]) >= 0.9*lnum/4:
             tem_ls.append(k+3)
             tem_ls.append(k+3)
+        '''
     box_ls.append(tem_ls)
 #print(box_ls)
 
@@ -194,7 +201,8 @@ fig, ax1 = plt.subplots(figsize=(10, 6))
 fig.canvas.set_window_title('Quality Scores Across All Bases')
 plt.subplots_adjust (left=0.075, right=0.95, top=0.9, bottom=0.25)
 
-bp = plt.boxplot(box_ls, notch=0, sym='+', vert=1, whis=0.25 )
+#bp = plt.boxplot(box_ls, notch=0, sym='+', vert=1, whis=0.25 )
+bp = plt.boxplot(box_ls, 0, '')
 plt.setp(bp['boxes'], color='black')
 plt.setp(bp['whiskers'], color='black')
 plt.setp(bp['fliers'], color='red', marker='+')
@@ -232,7 +240,7 @@ plt.plot(x, y, color = 'b', linestyle = '-', label = 'Mean Quality')
 #plt.axis([1, seq_length, 0, 50])
 
 plt.legend(loc = 'upper right')
-plt.savefig(output_dir+'/Images/1_QualityScoresAcrossAllBases.jpg', format='jpg')
+plt.savefig(fastq_dir+'/Images/1_QualityScoresAcrossAllBases.jpg', format='jpg')
 
 ##--------------------------------------------------------------------------------- Plot for Per sequence quality scores
 x2 = np.linspace(1,50, 50)
@@ -245,7 +253,7 @@ ax2.set_xlabel('Mean Sequence Quality (Phred Score)')
 ax2.set_ylabel('Read Number')
 plt.plot(x2, y2, linestyle = '-', label = 'Average Quality per read')
 plt.legend(loc = 'upper left')
-plt.savefig(output_dir+'/Images/2_QualityScoreDistributionOverAllSequences.jpg', format='jpg')
+plt.savefig(fastq_dir+'/Images/2_QualityScoreDistributionOverAllSequences.jpg', format='jpg')
 ##------------------------------------------------------------------------------ Plot for per base sequence content
 x3 = np.linspace(1, seq_length, seq_length)
 list_sum = lista + listt + listg + listc
@@ -267,7 +275,7 @@ plt.plot(x3, 100*listc/list_sum, linestyle = '-', label = '%C')
 plt.plot(x3, 100*listn/list_sum, linestyle = '-', label = '%N')
 plt.plot(x3, 100*(listg+listc)/list_sum, linestyle = '-', label = '%GC')
 plt.legend(loc = 'upper right')
-plt.savefig(output_dir+'/Images/3_SequenceContentAcrossAllBases.jpg',format='jpg')
+plt.savefig(fastq_dir+'/Images/3_SequenceContentAcrossAllBases.jpg',format='jpg')
 ##------------------------------------------------------------------------ Plot for per sequence GC content
 x4 = [] #np.linspace(1,100, 100)
 y4 = []
@@ -278,6 +286,9 @@ for i in range(seq_length):
     y4.append(gc_ls[e])
     read_sum+=gc_ls[e]
     e+=1
+ls2array = np.array([1])*x4
+gc_content = sum(ls2array*y4)*4/lnum
+print('\033[1;31;40m'+'%GC: '+'\033[0m'+str(gc_content)[:5])
 #print(str(read_sum)+ str(max(y4)))
 
 fig4, ax4 = plt.subplots(figsize=(10,6))
@@ -289,7 +300,7 @@ ax4.set_ylabel('Count')
 ax4.set_xlim(0,100)
 plt.plot(x4, y4, linestyle = '-', label = 'GC count per read')
 plt.legend(loc = 'upper right')
-plt.savefig(output_dir+'/Images/4_GCdistributionOverAllSequences.jpg',format='jpg')
+plt.savefig(fastq_dir+'/Images/4_GCdistributionOverAllSequences.jpg',format='jpg')
 FILE.close()
 ##----------------------------------------------------------------------------- Plot for sequence length distibution
 dic_ls = sorted(dic.iteritems(), key = lambda asd:asd[0], reverse = False)
@@ -309,9 +320,9 @@ ax5.set_xlim(0,seq_length+10)
 barwidth =1 
 plt.bar(len_seq, reads_num, width=barwidth, color = 'y', label = 'Reads number')
 plt.legend(loc = 'upper left')
-plt.savefig(output_dir+'/Images/5_DistributionofSequenceLengthsOverAllSequence.jpg',format='jpg')
+plt.savefig(fastq_dir+'/Images/5_DistributionofSequenceLengthsOverAllSequence.jpg',format='jpg')
 ##------------------------------------------------------------------------------------- html file
-out_html = open(output_dir+'/ngs_qc.html','w')
+out_html = open(fastq_dir+'/ngs_qc.html','w')
 out_html.write("<!DOCTYPE HTML>\n")
 out_html.write('<html>\n')
 out_html.write('\t<head>\n')
@@ -321,6 +332,9 @@ out_html.write('\t<div><h1>NGS Raw Data Quality Control Report</h1></div>\n')
 out_html.write('\t</div><div>Produced by <a href=\"https://github.com/TuanjieNew/fastqc\">TuanjieNew</a> (version 0.1)</div>\n')
 out_html.write('\t<div>'+str(sys_time)+'<br />\n')
 out_html.write('\t<h3>File name:'+ fastq_name+'</h3>\n')
+out_html.write('\t<div><B>Sequence length:</B> '+str(seq_length)+'</div>\n')
+out_html.write('\t<div><B>Total Sequences:</B> '+str(lnum/4)+'</div>\n')
+out_html.write('\t<div><B>%GC:</B> '+str(gc_content)[:5]+'</div>\n')
 out_html.write('\t</div>\n')
 out_html.write('\t<ul>\n')
 out_html.write('\t\t<li><h2><li>Per base sequence quality</li><img src=\"Images/1_QualityScoresAcrossAllBases.jpg\"></h2></li>\n')
